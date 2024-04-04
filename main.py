@@ -56,28 +56,31 @@ dy = d/2 * np.sin(theta)
 x=[]
 y=[]
 
-#畫齒根
-x.append(rf)
-y.append(0)
-xyPoints=[(rf,0)]
-
-
 #畫漸開線
-final_a=np.degrees(np.arccos(rb/ra))
-final_t=ra*np.sin(final_a/180*np.pi)/rb*180/np.pi
+final_a=np.degrees(np.arccos(rb/ra))#漸開線終點
+final_t=ra*np.sin(final_a/180*np.pi)/rb*180/np.pi#漸開線終點
 # print('final_a=',final_a)
 # print('final_t=',final_t)
 jump=True
-t=0
+if rf>=rb:#如果齒底圓半徑>基圓半徑#漸開線從齒根開始畫#Ver.1.01
+    begin_a=np.degrees(np.arccos(rb/rf))
+    t=rf*np.sin(begin_a/180.0*np.pi)/rb*180.0/np.pi
+    xyPoints=[]
+else:
+    t=0
+    #畫齒根
+    x.append(rf)
+    y.append(0)
+    xyPoints=[(rf,0)]
 while(jump):
     if t>=final_t:
         t=final_t
         jump=False
-    cbArc=rb*t*np.pi/180#弧長
+    cbArc=rb*t*np.pi/180.0#弧長
     a=np.degrees(np.arctan(cbArc/rb))
-    inva=(t-a)*np.pi/180#漸開線函數
-    xc=(rb/np.cos(a*np.pi/180)) * np.cos(inva)#漸開線公式
-    yc=(rb/np.cos(a*np.pi/180)) * np.sin(inva)#漸開線公式
+    inva=(t-a)*np.pi/180.0#漸開線函數
+    xc=(rb/np.cos(a*np.pi/180.0)) * np.cos(inva)#漸開線公式
+    yc=(rb/np.cos(a*np.pi/180.0)) * np.sin(inva)#漸開線公式
     x.append(xc)
     y.append(yc)
     xyPoints.append((xc,yc))
@@ -98,7 +101,7 @@ rpt=rp*np.sin(rpa/180*np.pi)/rb#齒型和節圓交接的點，和圓心的夾角
 # print('rpt=',rpt)
 theta=(rpt-rpa/180*np.pi)*2 + np.pi/tn
 Mr=np.array([[np.cos(theta),-np.sin(theta)],
-           [np.sin(theta),np.cos(theta)]],)
+             [np.sin(theta), np.cos(theta)]],)
 xyPointsMir=[]##
 for i in range(len(mirCx)):
     ii=len(mirCx)-i-1#倒者走
@@ -109,10 +112,10 @@ for i in range(len(mirCx)):
 #將齒根旋轉複製
 xgear=[]
 ygear=[]
-for i in range(1,tn+1):
+for i in range(0,tn):
     theta=np.pi/tn*i*2
     Mr=np.array([[np.cos(theta),-np.sin(theta)],
-           [np.sin(theta),np.cos(theta)]],)
+                 [np.sin(theta), np.cos(theta)]],)
     for i in range(len(x)):
         xm,ym,=Mr.dot([x[i],y[i]])
         xgear.append(xm)
@@ -138,7 +141,7 @@ msp = doc.modelspace()
 #畫軸
 msp.add_circle(center=(0, 0), radius=d/2)  # 在模型空間中添加一個半徑為5的圓形
 #畫齒
-for i in range(1,tn+1):
+for i in range(0,tn):
     theta=np.pi/tn*i*2
     Mr=np.array([[np.cos(theta),-np.sin(theta)],
            [np.sin(theta),np.cos(theta)]],)
@@ -148,17 +151,23 @@ for i in range(1,tn+1):
         xygear.append(Mr.dot(xyPoints[i]))
     for i in range(len(xyPointsMir)):
         xygearMir.append(Mr.dot(xyPointsMir[i]))
-    msp.add_line(xygear[0],xygear[1])
-    msp.add_spline(xygear[1:])
+    if rf>rb:#如果齒底圓半徑>基圓半徑#Ver.1.01
+        msp.add_spline(xygear)#直接畫漸開線
+    else:
+        msp.add_line(xygear[0],xygear[1])#齒根
+        msp.add_spline(xygear[1:])
     start_angle,end_angle=c2point(xygear[-1],xygearMir[0])#
     msp.add_arc((0,0),ra,start_angle,end_angle)#連結齒頂
-    msp.add_spline(xygearMir[:-2])
-    msp.add_line(xygearMir[-2],xygearMir[-1])
+    if rf>rb:#如果齒底圓半徑>基圓半徑#Ver.1.01
+        msp.add_spline(xygearMir)
+    else:
+        msp.add_spline(xygearMir[:-2])
+        msp.add_line(xygearMir[-2],xygearMir[-1])
 
     theta=np.pi/tn*2
     Mr=np.array([[np.cos(theta),-np.sin(theta)],
            [np.sin(theta),np.cos(theta)]],)
-    start_angle,end_angle=c2point(xygearMir[-1],Mr.dot(xygear[0]))#
+    start_angle,end_angle=c2point(xygearMir[-1],Mr.dot(xygear[0]))#連接下一個漸開線起點
     msp.add_arc((0,0),rf,start_angle,end_angle)#連結齒底
 #
 # 保存DXF文件
@@ -170,4 +179,4 @@ try:
 except:
     print('齒輪生成失敗')
     print('Fail')
-exit(0)
+
