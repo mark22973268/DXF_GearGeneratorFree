@@ -1,4 +1,4 @@
-# DXF_GearGeneratorFree
+# DXF Gear Generator Free
 Dxf Gear Generator for Free
 This is a file that can generate gear for free.
 Pleace watch the video(.MP4) to know hoe to use.
